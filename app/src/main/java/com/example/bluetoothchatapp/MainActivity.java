@@ -9,6 +9,7 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
 import android.view.View;
+import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.EditText;
@@ -75,6 +76,16 @@ public class MainActivity extends AppCompatActivity {
             public void onClick(View v) {
                 ServerClass serverClass = new ServerClass();
                 serverClass.start();
+            }
+        });
+        //On click of any item from the device list
+        deviceList.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+            @Override
+            public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
+                ClientClass clientClass = new ClientClass(btDevices[position]);
+                clientClass.start();
+
+                status.setText("Connecting");
             }
         });
     }
@@ -160,6 +171,34 @@ public class MainActivity extends AppCompatActivity {
                     // write some code for send recieve message here
                     break;
                 }
+            }
+        }
+    }
+
+    private class ClientClass extends Thread {
+        private BluetoothDevice device;
+        private BluetoothSocket socket;
+
+        public ClientClass(BluetoothDevice device1) {
+            device = device1;
+            try {
+                socket = device.createRfcommSocketToServiceRecord(MY_UUID);
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+
+        public void run() {
+            try {
+                socket.connect();
+                Message message = Message.obtain();
+                message.what = STATE_CONNECTED;
+                handler.sendMessage(message);
+            } catch (IOException e) {
+                e.printStackTrace();
+                Message message = Message.obtain();
+                message.what = STATE_CONNECTION_FAILED;
+                handler.sendMessage(message);
             }
         }
     }
